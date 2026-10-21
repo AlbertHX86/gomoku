@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gomoku · 五子棋 – Free Online Five in a Row</title>
+  <meta name="description" content="A free, minimal Gomoku in your browser. Play five in a row against the computer or a friend.">
+  <link rel="canonical" href="https://alberthx86.github.io/gomoku/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://alberthx86.github.io/gomoku/">
+  <meta property="og:title" content="Gomoku · 五子棋">
+  <meta property="og:description" content="A free, minimal Gomoku in your browser. Play five in a row against the computer or a friend.">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Gomoku",
+    "alternateName": "五子棋",
+    "url": "https://alberthx86.github.io/gomoku/",
+    "description": "A free, minimal Gomoku in your browser. Play five in a row against the computer or a friend.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "inLanguage": ["en", "zh-CN"],
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Albert Huang", "url": "https://alberthx86.github.io/" }
+  }
+  </script>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231d1d1f'/%3E%3Ccircle cx='5.5' cy='8' r='2.6' fill='%23fff'/%3E%3Ccircle cx='10.5' cy='8' r='2.6' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      var t = localStorage.getItem('gomoku.theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="bar">
+    <span class="brand" data-i18n="title">Gomoku</span>
+    <div class="tools">
+      <label class="lang">
+        <span class="sr-only">语言 / Language</span>
+        <select id="lang" aria-label="语言 / Language">
+          <option value="" disabled selected hidden>语言 / Language</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+      </label>
+      <button id="theme" class="link" type="button" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <main>
+    <div class="sizes" role="radiogroup" aria-label="Mode">
+      <button type="button" data-mode="easy" data-i18n="easy">Easy</button>
+      <button type="button" data-mode="medium" data-i18n="medium">Medium</button>
+      <button type="button" data-mode="hard" data-i18n="hard">Hard</button>
+      <button type="button" data-mode="pvp" data-i18n="pvp">2 Players</button>
+    </div>
+
+    <div class="status">
+      <div>
+        <span class="label" data-i18n="turn">Turn</span>
+        <span class="value"><span id="turn" class="turn-stone black"></span> <span id="turn-text" class="turn-text">You</span></span>
+      </div>
+      <div>
+        <span class="label" data-i18n="time">Time</span>
+        <span id="time" class="value mono">0:00</span>
+      </div>
+      <div>
+        <span id="score-label" class="label" data-i18n="scoreAi">You – Computer</span>
+        <span id="score" class="value mono">0 – 0</span>
+      </div>
+    </div>
+
+    <div id="board" class="goban" aria-live="off"></div>
+
+    <p id="hint" class="hint" data-i18n="hintAi">You play black and move first. Five in a row wins.</p>
+
+    <div class="actions">
+      <button id="reset" class="btn" type="button" data-i18n="reset">Reset</button>
+    </div>
+
+    <section class="records" aria-labelledby="rec-title">
+      <div class="records-head">
+        <h2 id="rec-title" data-i18n="records">Records</h2>
+        <button id="clear" class="link small" type="button" data-i18n="clear">Clear</button>
+      </div>
+      <ol id="history" class="history"></ol>
+      <p id="empty" class="muted small" data-i18n="empty">No games in this mode yet.</p>
+      <p class="muted small" data-i18n="local">Records are saved only in this browser.</p>
+    </section>
+
+    <details class="lit">
+      <summary data-i18n="lit">Research: Gomoku, board games and the prefrontal cortex</summary>
+
+      <div class="en-only">
+        <p>Gomoku asks you to keep several threats in mind at once, guess what your opponent will do and plan moves ahead. Planning and holding information in working memory are jobs the prefrontal cortex is central to [1].</p>
+        <p><b>What studies saw</b></p>
+        <ul>
+          <li>fMRI in 25 young adults playing gomoku tasks: moves that needed more thought activated the right dorsolateral prefrontal and posterior parietal cortex; choosing the best point without placing a stone activated the right medial prefrontal cortex and the caudate [2].</li>
+          <li>In four-in-a-row, a close relative of gomoku, a model of heuristic search fitted to players' moves, response times and eye movements showed that stronger players plan further ahead [3].</li>
+          <li>Among 3,675 older adults followed for 20 years, regular board-game players had a 15% lower risk of dementia. The link disappeared after accounting for baseline cognition and depression, but players showed less cognitive decline and less depression [4].</li>
+          <li>A 2023 meta-analysis of traditional board games (chess, Go, mahjong and others) in older adults at risk of or with cognitive impairment found small gains on global cognitive screening scores, with different games helping different skills [5].</li>
+        </ul>
+        <p><b>What this does not show</b></p>
+        <p>No study has tested whether playing gomoku changes the prefrontal cortex. The imaging study is small and single-session, the cohort study is observational, and the board-game trials are few and mixed. Brain training reliably improves the trained task, but evidence that it transfers to other tasks or daily life is weak [6]. Play gomoku because it's fun, not as a treatment.</p>
+      </div>
+
+      <div class="zh-only">
+        <p>下五子棋需要同时记住多个威胁、预判对手、提前规划几步。规划和工作记忆正是前额叶皮层的核心功能 [1]。</p>
+        <p><b>研究观察到了什么</b></p>
+        <ul>
+          <li>对 25 名青年人完成五子棋任务时的 fMRI 研究：需要更多思考的落子任务激活了右侧背外侧前额叶和后顶叶；只判断最佳落点、不实际落子时，激活了右侧内侧前额叶和尾状核 [2]。</li>
+          <li>在与五子棋相近的“四子棋”中，研究者用启发式搜索模型拟合玩家的落子、反应时间和眼动，发现水平越高的玩家规划得越远 [3]。</li>
+          <li>在 3,675 名随访 20 年的老年人中，经常玩棋盘游戏的人患痴呆的风险低 15%。考虑基线认知和抑郁后，这一关联不再显著，但玩家的认知下降更少、抑郁更少 [4]。</li>
+          <li>2023 年一项针对传统棋类（国际象棋、围棋、麻将等）的荟萃分析：在有认知障碍风险或已有认知障碍的老年人中，整体认知筛查分数有小幅提高，不同棋类改善的能力各不相同 [5]。</li>
+        </ul>
+        <p><b>这些研究不能说明什么</b></p>
+        <p>还没有研究检验过下五子棋能否改变前额叶。脑成像研究样本小、只测一次；队列研究是观察性的；棋类干预试验数量少、结果不一。脑力训练能可靠地提高被训练任务本身的成绩，但迁移到其他任务或日常生活的证据很弱 [6]。因为好玩而下五子棋，而不是把它当作治疗手段。</p>
+      </div>
+
+      <p class="refs-title" data-i18n="refs">References</p>
+      <ol class="refs">
+        <li>Miller EK, Cohen JD. An integrative theory of prefrontal cortex function. <i>Annual Review of Neuroscience</i>. 2001;24:167–202. <a href="https://doi.org/10.1146/annurev.neuro.24.1.167" target="_blank" rel="noopener">doi:10.1146/annurev.neuro.24.1.167</a></li>
+        <li>Lu Y, Kim J, Kim T. A neurophysiological approach to the distinction between motor and cognitive skills: a functional magnetic resonance imaging study. <i>Frontiers in Neuroscience</i>. 2023;17:1178800. <a href="https://doi.org/10.3389/fnins.2023.1178800" target="_blank" rel="noopener">doi:10.3389/fnins.2023.1178800</a></li>
+        <li>van Opheusden B, Kuperwajs I, Galbiati G, et al. Expertise increases planning depth in human gameplay. <i>Nature</i>. 2023;618(7967):1000–1005. <a href="https://doi.org/10.1038/s41586-023-06124-2" target="_blank" rel="noopener">doi:10.1038/s41586-023-06124-2</a></li>
+        <li>Dartigues JF, Foubert-Samier A, Le Goff M, et al. Playing board games, cognitive decline and dementia: a French population-based cohort study. <i>BMJ Open</i>. 2013;3(8):e002998. <a href="https://doi.org/10.1136/bmjopen-2013-002998" target="_blank" rel="noopener">doi:10.1136/bmjopen-2013-002998</a></li>
+        <li>Pozzi FE, Appollonio I, Ferrarese C, Tremolizzo L. Can traditional board games prevent or slow down cognitive impairment? A systematic review and meta-analysis. <i>Journal of Alzheimer's Disease</i>. 2023;95(3):829–845. <a href="https://doi.org/10.3233/JAD-230473" target="_blank" rel="noopener">doi:10.3233/JAD-230473</a></li>
+        <li>Simons DJ, Boot WR, Charness N, et al. Do “brain-training” programs work? <i>Psychological Science in the Public Interest</i>. 2016;17(3):103–186. <a href="https://doi.org/10.1177/1529100616661983" target="_blank" rel="noopener">doi:10.1177/1529100616661983</a></li>
+      </ol>
+    </details>
+  </main>
+
+  <footer class="foot">
+    <p>
+      <a href="https://alberthx86.github.io/schulte-grid/" data-i18n="schulte">Schulte Grid</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://alberthx86.github.io/sudoku/" data-i18n="sudoku">Sudoku</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/AlbertHX86/gomoku" target="_blank" rel="noopener">GitHub</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://alberthx86.github.io/" target="_blank" rel="noopener">Albert Huang</a>
+    </p>
+    <p data-i18n="copyright">© 2026 Albert Huang. Released under the MIT License.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
