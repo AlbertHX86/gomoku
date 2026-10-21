@@ -13,7 +13,8 @@ A minimal Gomoku (five in a row) that runs in the browser. It has no ads, no sig
 3. Tap a point on the 15×15 board to place a stone. Players take turns.
 4. The first to get **five or more stones in a row**, horizontally, vertically or diagonally, wins. If the board fills up, it's a draw.
 5. The timer starts with the first stone. The last stone played has a blue dot, and the winning line is outlined.
-6. Press **Reset** for a new game.
+6. Press **Undo** to take back a move, up to 3 times per game. Against the computer it takes back your last stone and the computer's reply. In 2 Players mode it takes back the last stone, and both players share the 3 undos.
+7. Press **Reset** for a new game.
 
 Tip: block your opponent's open threes (three in a row with both ends free) early, and try to build two threats at once.
 
@@ -21,7 +22,7 @@ The top right corner switches between light and dark themes and between English 
 
 ## Records
 
-Each mode keeps its own records: the running score (you vs computer, or black vs white) and your 10 most recent games with result, number of moves and time. They are stored in your browser's `localStorage`. Nothing is sent anywhere.
+Each mode keeps its own records: the running score (you vs computer, or black vs white) and your 10 most recent games with result, number of moves, time and undos used. They are stored in your browser's `localStorage`. Nothing is sent anywhere.
 
 - The same browser on the same device keeps your records, online or offline.
 - Records do not sync between browsers or devices.
