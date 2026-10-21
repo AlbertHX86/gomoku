@@ -25,6 +25,9 @@
       whiteWin: 'White wins in {m} moves!',
       draw: 'Draw: the board is full.',
       reset: 'Reset',
+      undo: 'Undo ({n})',
+      undos: '{n} undo',
+      undosPl: '{n} undos',
       records: 'Records',
       clear: 'Clear',
       empty: 'No games in this mode yet.',
@@ -67,6 +70,9 @@
       whiteWin: '白方获胜，共 {m} 手！',
       draw: '平局：棋盘已满。',
       reset: '重置',
+      undo: '悔棋（{n}）',
+      undos: '悔棋 {n} 次',
+      undosPl: '悔棋 {n} 次',
       records: '记录',
       clear: '清空',
       empty: '这个模式还没有对局记录。',
@@ -94,6 +100,7 @@
   var STARS = [[3, 3], [3, 11], [7, 7], [11, 3], [11, 11]];
   var DIRS = [[0, 1], [1, 0], [1, 1], [1, -1]];
   var KEEP = 10; // records shown per mode
+  var UNDOS = 3;  // undos allowed per game
 
   var $ = function (id) { return document.getElementById(id); };
   var boardEl = $('board');
@@ -121,7 +128,7 @@
   var mode = store.get('mode', 'medium');
   if (MODES.indexOf(mode) < 0) mode = 'medium';
 
-  var grid, points, turn, moves, last, startAt, timer, finished, busy, endKey, aiTimeout;
+  var grid, points, turn, moves, last, startAt, timer, finished, busy, endKey, aiTimeout, played, undosLeft;
 
   function t(key, vars) {
     var s = TEXT[lang][key];
@@ -266,6 +273,8 @@
     finished = false;
     busy = false;
     endKey = null;
+    played = [];
+    undosLeft = UNDOS;
 
     boardEl.className = 'goban';
     boardEl.innerHTML = '';
@@ -297,6 +306,38 @@
     renderRecords();
   }
 
+  function renderUndo() {
+    var b = $('undo');
+    b.textContent = t('undo', { n: undosLeft });
+    // Against the computer an undo takes back your stone and its reply.
+    var need = mode === 'pvp' ? 1 : 2;
+    b.disabled = finished || busy || !undosLeft || played.length < need;
+  }
+
+  function unplace() {
+    var i = played.pop();
+    grid[i] = 0;
+    moves--;
+    var p = points[i];
+    p.querySelector('.stone').remove();
+    p.classList.add('free');
+    var ghost = document.createElement('span');
+    ghost.className = 'ghost';
+    p.appendChild(ghost);
+    last = played.length ? played[played.length - 1] : -1;
+    if (last >= 0) points[last].querySelector('.stone').classList.add('last');
+    turn = turn === BLACK ? WHITE : BLACK;
+  }
+
+  function undo() {
+    if ($('undo').disabled) return;
+    unplace();
+    if (mode !== 'pvp') unplace();
+    undosLeft--;
+    renderTurn();
+    renderUndo();
+  }
+
   function renderTurn() {
     turnEl.className = 'turn-stone ' + (turn === BLACK ? 'black' : 'white');
     $('turn-text').textContent = mode === 'pvp' ? t(turn === BLACK ? 'black' : 'white') : t(turn === BLACK ? 'you' : 'computer');
@@ -326,12 +367,14 @@
     }
     s.classList.add('last');
     last = i;
+    played.push(i);
 
     var line = fiveThrough(i, who);
     if (line) return finish(who, line);
     if (moves === N * N) return finish(0, null);
     turn = who === BLACK ? WHITE : BLACK;
     renderTurn();
+    renderUndo();
   }
 
   function fiveThrough(i, who) {
@@ -366,12 +409,13 @@
     endKey = { win: 'youWin', loss: 'aiWin', black: 'blackWin', white: 'whiteWin', draw: 'draw' }[result];
 
     var list = records();
-    list.push({ result: result, moves: moves, ms: Math.round(ms), at: Date.now() });
+    list.push({ result: result, moves: moves, ms: Math.round(ms), at: Date.now(), undos: UNDOS - undosLeft });
     store.set('records.' + mode, list);
 
     hintEl.className = 'hint' + (result === 'loss' || result === 'draw' ? '' : ' win');
     hintEl.textContent = t(endKey, { m: moves });
     renderRecords();
+    renderUndo();
   }
 
   boardEl.addEventListener('click', function (e) {
@@ -384,6 +428,7 @@
 
     busy = true;
     boardEl.classList.add('busy');
+    renderUndo();
     hintEl.textContent = t('thinking');
     aiTimeout = setTimeout(function () {
       var m = aiMove(WHITE);
@@ -421,7 +466,8 @@
       res.textContent = t(names[r.result]);
       var m = document.createElement('span');
       m.className = 'm muted';
-      m.textContent = ' · ' + t('moves', { m: r.moves }) + ' · ' + fmt(r.ms);
+      m.textContent = ' · ' + t('moves', { m: r.moves }) + ' · ' + fmt(r.ms) +
+        (r.undos ? ' · ' + t(r.undos === 1 ? 'undos' : 'undosPl', { n: r.undos }) : '');
       right.appendChild(res);
       right.appendChild(m);
       li.appendChild(when);
@@ -451,7 +497,7 @@
     // The button names the theme you switch to.
     $('theme').textContent = currentTheme() === 'dark' ? t('light') : t('dark');
     scoreLabelEl.textContent = t(mode === 'pvp' ? 'scorePvp' : 'scoreAi');
-    if (points) renderTurn();
+    if (points) { renderTurn(); renderUndo(); }
     if (finished) hintEl.textContent = t(endKey, { m: moves });
     else if (busy) hintEl.textContent = t('thinking');
     else hintEl.textContent = t(mode === 'pvp' ? 'hintPvp' : 'hintAi');
@@ -474,6 +520,7 @@
   });
 
   $('reset').addEventListener('click', newGame);
+  $('undo').addEventListener('click', undo);
 
   $('clear').addEventListener('click', function () {
     if (!records().length) return;
